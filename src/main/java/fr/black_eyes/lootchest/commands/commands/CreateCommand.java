@@ -31,35 +31,55 @@ public class CreateCommand extends SubCommand {
 	
 	@Override
 	protected void onCommand(CommandSender sender, String[] args) {
-		Player player = (Player) sender;
-		Block chest;
-		String chestName = args[1];
-		
-		BlockIterator iter = new BlockIterator(player, 10);
-		Block lastBlock = iter.next();
-		while (iter.hasNext()) {
-			lastBlock = iter.next();
-			if (lastBlock.getType() == Material.AIR) {
-				continue;
-			}
-			break;
-		}
-		chest = lastBlock;
-		if (!Mat.isALootChestBlock(chest)) {
-			Utils.msg(sender, "notAChest", " ", " ");
-		} else if (LootChestUtils.isEmpty(((InventoryHolder) chest.getState()).getInventory())) {
-			Utils.msg(sender, "chestIsEmpy", " ", " ");
-		} else if (Main.getInstance().getLootChest().containsKey(chestName)) {
-			Utils.msg(sender, "chestAlreadyExist", Constants.cheststr, chestName);
-		} else if (LootChestUtils.isLootChest(chest.getLocation()) != null) {
-			Utils.msg(sender, "blockIsAlreadyLootchest", Constants.cheststr, chestName);
-		} else {
-			Lootchest newChest = new Lootchest(chest, chestName);
-			Main.getInstance().getLootChest().put(chestName, newChest);
-			newChest.spawn(true);
-			newChest.updateData();
-			Utils.msg(sender, "chestSuccefulySaved", Constants.cheststr, chestName);
-			uiHandler.openUi(player, UiHandler.UiType.MAIN, newChest);
-		}
-	}
+    Player player = sender instanceof Player ? (Player) sender : null;
+    Block chest;
+    String chestName = args[1];
+
+    if (player != null) {
+        BlockIterator iter = new BlockIterator(player, 10);
+        Block lastBlock = iter.next();
+        while (iter.hasNext()) {
+            lastBlock = iter.next();
+            if (lastBlock.getType() == Material.AIR) {
+                continue;
+            }
+            break;
+        }
+        chest = lastBlock;
+
+        if (!Mat.isALootChestBlock(chest)) {
+            // Create a chest at the player's location
+            Location playerLocation = player.getLocation();
+            playerLocation.getBlock().setType(Material.CHEST);
+            chest = playerLocation.getBlock();
+            Utils.msg(sender, "Chest was not found, creating a new chest at your location.", " ", " ");
+        }
+    } else {
+        // If the sender is not a player, create a chest at (0, 200, 0)
+        Location consoleLocation = new Location(Bukkit.getWorld("world"), 0, 200, 0); // Adjust "world" if necessary
+        Block consoleBlock = consoleLocation.getBlock();
+        consoleBlock.setType(Material.CHEST);
+        chest = consoleBlock;
+        Utils.msg(sender, "Chest was not found, creating a new chest at (0, 200, 0).", " ", " ");
+    }
+
+    if (LootChestUtils.isEmpty(((InventoryHolder) chest.getState()).getInventory())) {
+        Utils.msg(sender, "chestIsEmpty", " ", " ");
+    } else if (Main.getInstance().getLootChest().containsKey(chestName)) {
+        Utils.msg(sender, "chestAlreadyExists", Constants.cheststr, chestName);
+    } else if (LootChestUtils.isLootChest(chest.getLocation()) != null) {
+        Utils.msg(sender, "blockIsAlreadyLootchest", Constants.cheststr, chestName);
+    } else {
+        Lootchest newChest = new Lootchest(chest, chestName);
+        Main.getInstance().getLootChest().put(chestName, newChest);
+        newChest.spawn(true);
+        newChest.updateData();
+        Utils.msg(sender, "chestSuccessfullySaved", Constants.cheststr, chestName);
+
+        // If the sender is a player, open the UI
+        if (player != null) {
+            uiHandler.openUi(player, UiHandler.UiType.MAIN, newChest);
+        }
+    }
+}
 }

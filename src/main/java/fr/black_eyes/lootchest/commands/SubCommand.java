@@ -62,8 +62,16 @@ public abstract class SubCommand {
 	
 	public void execute(CommandSender sender, String[] args) {
 		if (isPlayerRequired && !(sender instanceof Player)) {
-			sender.sendMessage(ChatColor.RED + "Please, run this command in-game");
+			sender.sendMessage(ChatColor.RED + "Please, run this command in-game, but will attempt to run");
+			for (int i = 1; i < args.length; i++) {
+			ArgType arg = getArgs().get(i-1);
+			if (!arg.isValid(args[i], sender)) {
+				//sender.sendMessage(ChatColor.RED + "Invalid argument " + args[i] + " for " + arg.getName());
+				return;
+			}
+			onCommand(sender, args);
 			return;
+			}
 		}
 		if (args.length < getArgCount()) {
 			sender.sendMessage(ChatColor.RED + getUsage());
